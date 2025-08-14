@@ -9,12 +9,16 @@
 <body>
   <header class="topbar">
     <div class="brand">Build<span>Fast</span></div>
-    <nav><a href="index.html" class="muted">Home</a></nav>
+    <nav>
+      <a href="index.html" class="muted">Home</a>
+      <a href="shop.html" class="muted">Shop</a>
+      <a href="admin.html" class="muted">Admin</a>
+    </nav>
   </header>
 
   <main class="wizard container">
     <form id="wizard-form">
-      <!-- STEP 1: Describe + categories + sketches -->
+      <!-- STEP 1: Describe + categories + sketches + contact -->
       <section class="card step" data-step="1">
         <h2>Describe your product</h2>
         <label>Short description
@@ -25,16 +29,21 @@
         </label>
 
         <fieldset class="tags">
-          <legend>Categories (choose all that fit)</legend>
-          <label><input type="checkbox" name="tags" value="electronics"> Electronics</label>
-          <label><input type="checkbox" name="tags" value="drones"> Drones</label>
-          <label><input type="checkbox" name="tags" value="wood"> Wood</label>
-          <label><input type="checkbox" name="tags" value="metal"> Metal</label>
-          <label><input type="checkbox" name="tags" value="3dprint"> 3D Print</label>
-          <label><input type="checkbox" name="tags" value="laser"> Laser-cut</label>
-          <label><input type="checkbox" name="tags" value="textile"> Textile</label>
-          <label><input type="checkbox" name="tags" value="lighting"> Lighting</label>
-          <label><input type="checkbox" name="tags" value="robotics"> Robotics</label>
+          <legend>Categories (pick at least one)</legend>
+          <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
+            <label><input type="checkbox" name="tags" value="electronics"> Electronics</label>
+            <label><input type="checkbox" name="tags" value="drones"> Drones</label>
+            <label><input type="checkbox" name="tags" value="robotics"> Robotics</label>
+            <label><input type="checkbox" name="tags" value="lighting"> Lighting</label>
+            <label><input type="checkbox" name="tags" value="3dprint"> 3D Printing</label>
+            <label><input type="checkbox" name="tags" value="laser"> Laser-cut</label>
+            <label><input type="checkbox" name="tags" value="cnc"> CNC</label>
+            <label><input type="checkbox" name="tags" value="wood"> Wood</label>
+            <label><input type="checkbox" name="tags" value="metal"> Metal</label>
+            <label><input type="checkbox" name="tags" value="textile"> Textile</label>
+            <label><input type="checkbox" name="tags" value="apparel"> Apparel</label>
+            <label><input type="checkbox" name="tags" value="packaging"> Packaging</label>
+          </div>
         </fieldset>
 
         <label>Upload sketches / reference images
@@ -42,23 +51,32 @@
         </label>
         <div id="sketch-previews" class="previews"></div>
 
+        <h3>Your contact</h3>
+        <label>Name <input id="cust-name" placeholder="Your name"></label>
+        <label>Email <input id="cust-email" type="email" placeholder="you@example.com"></label>
+
         <div class="nav">
           <button type="button" class="primary next">Next</button>
         </div>
       </section>
 
-      <!-- STEP 2: Choose path -->
+      <!-- STEP 2: Choose path (now 3 options) -->
       <section class="card step" data-step="2" hidden>
         <h2>Pick your path</h2>
-        <div class="two-up">
+        <div class="two-up" style="grid-template-columns:1fr 1fr 1fr">
           <div class="option" data-choice="custom">
             <h3>Customize existing</h3>
-            <p>Faster & usually cheaper. We find a product that’s already 70–90% of your idea, then modify it (shells, firmware, add-ons). Great when the market already has a close match.</p>
+            <p>Fast & cost-effective. We find a product that covers 70–90% of your idea and modify it (shell, firmware, add-ons).</p>
             <button type="button" class="secondary choose">Choose</button>
           </div>
           <div class="option" data-choice="scratch">
             <h3>From scratch</h3>
-            <p>Most flexible and unique, but more time and cost. We design and fabricate all key parts (print, cut, sew, assemble). Best for novel ideas with no good base product.</p>
+            <p>Maximum flexibility and uniqueness. We design and fabricate the key parts by hand (print, cut, sew, assemble).</p>
+            <button type="button" class="secondary choose">Choose</button>
+          </div>
+          <div class="option" data-choice="business">
+            <h3>Business (prototype / batch)</h3>
+            <p>For startups & companies: prototypes, small runs, certification guidance, and scaling options.</p>
             <button type="button" class="secondary choose">Choose</button>
           </div>
         </div>
@@ -103,10 +121,34 @@
           <input id="materials" placeholder="e.g., PLA + carbon fiber + M3 hardware">
         </label>
         <label>Key components
-          <textarea id="components" rows="3" placeholder="e.g., flight controller, ESCs, 2207 motors, camera, LEDs"></textarea>
+          <textarea id="components" rows="3" placeholder="e.g., flight controller, ESCs, motors, camera, LEDs"></textarea>
         </label>
         <label>Constraints (size, weight, safety)
           <input id="constraints" placeholder="e.g., ≤ 500 g, 5-inch props, USB-C bench power">
+        </label>
+
+        <label class="muted">
+          <input type="checkbox" id="shop-discount">
+          Get <strong>10% discount + royalties</strong> if we can list your item in our Shop.
+        </label>
+
+        <div class="nav">
+          <button type="button" class="ghost prev">Back</button>
+          <button type="button" class="primary next">Next</button>
+        </div>
+      </section>
+
+      <!-- STEP 3C: Business (prototype/batch) -->
+      <section class="card step" data-step="3c" hidden>
+        <h2>Business — basics</h2>
+        <label>Quantity / batch size
+          <input id="batch-qty" placeholder="e.g., 10, 50, 100">
+        </label>
+        <label>Certification needs (if any)
+          <input id="certs" placeholder="e.g., CE, FCC, RoHS, textile labels">
+        </label>
+        <label>Target unit price (optional)
+          <input id="target-price" placeholder="e.g., €49">
         </label>
         <div class="nav">
           <button type="button" class="ghost prev">Back</button>
@@ -120,16 +162,19 @@
         <div id="review"></div>
         <div class="nav">
           <button type="button" class="ghost prev">Back</button>
-          <button type="submit" class="primary">Save project</button>
+          <button type="submit" class="primary">Submit order</button>
         </div>
       </section>
     </form>
   </main>
 
   <footer class="footer">
-    <small>Local-only demo: data saved to your browser + JSON download. Connect a backend later (Airtable/Firebase).</small>
+    <small>Prototype: we’ll email you a quote. By submitting you agree to our Terms.</small>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script src="config.js"></script>
   <script src="scripts.js"></script>
 </body>
 </html>
