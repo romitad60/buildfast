@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BuildFast</title>
+  <meta name="description" content="Describe any product. Customize an existing one or build from scratch.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Build<span>Fast</span></div>
+    <form id="top-search" class="top-search" role="search">
+      <input id="q" type="search" placeholder="Describe what you want… e.g., 'hawk FPV drone with LEDs'">
+      <button type="submit" aria-label="Search">Search</button>
+    </form>
+    <nav>
+      <a href="#" class="muted">Projects</a>
+      <a href="create.html" class="pill">Start</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <h1>Build it fast</h1>
+      <p>Two paths: <strong>Customize</strong> an existing product or <strong>From scratch</strong>. Use the search above or tap the +.</p>
+    </section>
+
+    <section class="gallery">
+      <h2 class="section-title">Made by us (replace easily)</h2>
+      <div id="gallery-grid" class="grid cards"></div>
+      <p class="muted small">Tip: edit <code>GALLERY</code> in <code>scripts.js</code> to change these cards or add your own images.</p>
+    </section>
+  </main>
+
+  <button id="fab" class="fab" title="Create new product" aria-label="Create new product">+</button>
+
+  <footer class="footer">
+    <small>© 2025 BuildFast — Prototype. No orders processed.</small>
+  </footer>
+
+  <script src="scripts.js"></script>
+</body>
+</html>
