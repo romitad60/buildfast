@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New product • BuildFast</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Build<span>Fast</span></div>
+    <nav><a href="index.html" class="muted">Home</a></nav>
+  </header>
+
+  <main class="wizard container">
+    <form id="wizard-form">
+      <!-- STEP 1: Describe + categories + sketches -->
+      <section class="card step" data-step="1">
+        <h2>Describe your product</h2>
+        <label>Short description
+          <input id="desc" name="desc" placeholder="e.g., 'hawk FPV drone with LEDs and 20-min flight'">
+        </label>
+        <label>Details
+          <textarea id="details" name="details" rows="4" placeholder="Key features, constraints, budget, timeline…"></textarea>
+        </label>
+
+        <fieldset class="tags">
+          <legend>Categories (choose all that fit)</legend>
+          <label><input type="checkbox" name="tags" value="electronics"> Electronics</label>
+          <label><input type="checkbox" name="tags" value="drones"> Drones</label>
+          <label><input type="checkbox" name="tags" value="wood"> Wood</label>
+          <label><input type="checkbox" name="tags" value="metal"> Metal</label>
+          <label><input type="checkbox" name="tags" value="3dprint"> 3D Print</label>
+          <label><input type="checkbox" name="tags" value="laser"> Laser-cut</label>
+          <label><input type="checkbox" name="tags" value="textile"> Textile</label>
+          <label><input type="checkbox" name="tags" value="lighting"> Lighting</label>
+          <label><input type="checkbox" name="tags" value="robotics"> Robotics</label>
+        </fieldset>
+
+        <label>Upload sketches / reference images
+          <input id="sketches" type="file" accept="image/*" multiple>
+        </label>
+        <div id="sketch-previews" class="previews"></div>
+
+        <div class="nav">
+          <button type="button" class="primary next">Next</button>
+        </div>
+      </section>
+
+      <!-- STEP 2: Choose path -->
+      <section class="card step" data-step="2" hidden>
+        <h2>Pick your path</h2>
+        <div class="two-up">
+          <div class="option" data-choice="custom">
+            <h3>Customize existing</h3>
+            <p>Faster & usually cheaper. We find a product that’s already 70–90% of your idea, then modify it (shells, firmware, add-ons). Great when the market already has a close match.</p>
+            <button type="button" class="secondary choose">Choose</button>
+          </div>
+          <div class="option" data-choice="scratch">
+            <h3>From scratch</h3>
+            <p>Most flexible and unique, but more time and cost. We design and fabricate all key parts (print, cut, sew, assemble). Best for novel ideas with no good base product.</p>
+            <button type="button" class="secondary choose">Choose</button>
+          </div>
+        </div>
+        <div class="nav">
+          <button type="button" class="ghost prev">Back</button>
+        </div>
+      </section>
+
+      <!-- STEP 3A: Custom path -->
+      <section class="card step" data-step="3a" hidden>
+        <h2>Find a base product</h2>
+        <p>We’ll search marketplaces using your description as keywords. Pick a base product to start from, or paste a link.</p>
+        <div class="search-links">
+          <label>Keywords
+            <input id="kw" placeholder="auto-filled from your description">
+          </label>
+          <div class="market-links">
+            <a id="link-amz" target="_blank" rel="noopener">Amazon</a>
+            <a id="link-ebay" target="_blank" rel="noopener">eBay</a>
+            <a id="link-ali" target="_blank" rel="noopener">AliExpress</a>
+            <a id="link-gshop" target="_blank" rel="noopener">Google Shopping</a>
+          </div>
+        </div>
+        <label>Paste a product link to use as base
+          <input id="base-url" placeholder="https://...">
+        </label>
+        <label>Give it a short name
+          <input id="base-name" placeholder="e.g., 'Diatone Roma F5 kit'">
+        </label>
+        <button type="button" class="secondary" id="add-base">Add base product</button>
+        <ul id="base-list" class="list"></ul>
+        <div class="nav">
+          <button type="button" class="ghost prev">Back</button>
+          <button type="button" class="primary next">Next</button>
+        </div>
+      </section>
+
+      <!-- STEP 3B: From scratch -->
+      <section class="card step" data-step="3b" hidden>
+        <h2>From scratch — outline</h2>
+        <label>Main materials
+          <input id="materials" placeholder="e.g., PLA + carbon fiber + M3 hardware">
+        </label>
+        <label>Key components
+          <textarea id="components" rows="3" placeholder="e.g., flight controller, ESCs, 2207 motors, camera, LEDs"></textarea>
+        </label>
+        <label>Constraints (size, weight, safety)
+          <input id="constraints" placeholder="e.g., ≤ 500 g, 5-inch props, USB-C bench power">
+        </label>
+        <div class="nav">
+          <button type="button" class="ghost prev">Back</button>
+          <button type="button" class="primary next">Next</button>
+        </div>
+      </section>
+
+      <!-- STEP 4: Review + save -->
+      <section class="card step" data-step="4" hidden>
+        <h2>Review</h2>
+        <div id="review"></div>
+        <div class="nav">
+          <button type="button" class="ghost prev">Back</button>
+          <button type="submit" class="primary">Save project</button>
+        </div>
+      </section>
+    </form>
+  </main>
+
+  <footer class="footer">
+    <small>Local-only demo: data saved to your browser + JSON download. Connect a backend later (Airtable/Firebase).</small>
+  </footer>
+
+  <script src="scripts.js"></script>
+</body>
+</html>
