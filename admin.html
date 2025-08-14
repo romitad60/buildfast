@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin • BuildFast</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Build<span>Fast</span></div>
+    <nav><a href="index.html" class="muted">Home</a></nav>
+  </header>
+
+  <main class="container">
+    <section id="login-form" class="card">
+      <h2>Admin login</h2>
+      <label>Email <input id="login-email" type="email"></label>
+      <label>Password <input id="login-pass" type="password"></label>
+      <button id="login-btn" class="primary">Sign in</button>
+      <p class="small muted">Tip: if you don't have an admin account yet, open Supabase → Authentication and create one, or sign up here then confirm via email if you enabled confirmations.</p>
+    </section>
+
+    <section id="dashboard" class="card" hidden>
+      <h2>Orders</h2>
+      <p><strong>Total:</strong> <span id="stat-total">0</span></p>
+      <p><strong>By path:</strong> <span id="stat-path">{}</span></p>
+      <p><strong>By tag:</strong> <span id="stat-tag">{}</span></p>
+      <div id="orders" style="margin-top:12px"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="scripts.js"></script>
+  <script>
+    document.getElementById('login-btn').addEventListener('click', (e)=>{
+      e.preventDefault();
+      BF_adminInit();
+    });
+  </script>
+</body>
+</html>
