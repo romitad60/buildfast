@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shop • BuildFast</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Build<span>Fast</span></div>
+    <nav><a href="index.html" class="muted">Home</a></nav>
+  </header>
+
+  <main class="container">
+    <h1>Shop</h1>
+    <p class="muted">These are client products shared to the store (10% off + royalties).</p>
+    <div id="shop-grid" class="grid cards"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="scripts.js"></script>
+  <script> BF_shopInit(); </script>
+</body>
+</html>
