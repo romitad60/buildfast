@@ -1,367 +1,455 @@
-// ---------- CONFIG / INIT ----------
-emailjs.init(window.BF_CONFIG.EMAILJS_PUBLIC_KEY);
-const supa = window.supabase.createClient(
-  window.BF_CONFIG.SUPABASE_URL,
-  window.BF_CONFIG.SUPABASE_ANON_KEY
-);
+/* =========================================================
+   BuildFast — unified, robust client script
+   - Safe optional init for EmailJS & Supabase
+   - Solid home page (+ button, search, gallery)
+   - Wizard with 3 paths (custom / scratch / business)
+   - Order submit → Supabase (if configured) + EmailJS (if configured)
+   - Admin login + basic dashboard
+   - Shop list (graceful if columns don’t exist yet)
+   ========================================================= */
 
-// Suppliers by tag (shortlist – expand as you go)
+/* ---------------------------
+   OPTIONAL SERVICES (guarded)
+   --------------------------- */
+let supa = null;
+const CFG = (window.BF_CONFIG || {});
+(function safeInit() {
+  try {
+    if (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase) {
+      supa = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+    }
+    if (CFG.EMAILJS_PUBLIC_KEY && window.emailjs && typeof window.emailjs.init === "function") {
+      window.emailjs.init(CFG.EMAILJS_PUBLIC_KEY);
+    }
+  } catch (err) {
+    console.warn("Optional services not available on this page:", err);
+  }
+})();
+
+/* ---------------------------
+   SMALL UTILITIES
+   --------------------------- */
+const $  = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+const uid = () => "P-" + Math.random().toString(36).slice(2, 10).toUpperCase();
+
+/* ---------------------------
+   SUPPLIER SHORTLISTS by tag
+   (edit/extend freely)
+   --------------------------- */
 const SUPPLIERS = {
   electronics: [
-    {name:"Fab Lab CDMX", city:"Mexico City"},
-    {name:"La Nave Makerspace", city:"Mexico City"},
-    {name:"Lab121 FabLab", city:"Alessandria"}
+    "Fab Lab CDMX — Mexico City",
+    "La Nave Makerspace — Mexico City",
+    "Lab121 FabLab — Alessandria"
   ],
   drones: [
-    {name:"Hacedores / community", city:"Mexico City"},
-    {name:"SetLaser (metal/laser)", city:"Alessandria"}
+    "Hacedores / community — Mexico City",
+    "SetLaser (metal/laser) — Alessandria"
   ],
   "3dprint": [
-    {name:"Impresión 3D México", city:"Mexico City"},
-    {name:"AB Games / stampa 3D", city:"Alessandria"},
-    {name:"FabLab Alessandria", city:"Alessandria"}
+    "Impresión 3D México — Mexico City",
+    "AB Games (stampa 3D) — Alessandria",
+    "FabLab Alessandria — Alessandria"
   ],
   laser: [
-    {name:"AC Corte y Grabado Láser", city:"Mexico City"},
-    {name:"Bussetti & Mazza (acrylic/laser)", city:"Alessandria"}
+    "AC Corte y Grabado Láser — Mexico City",
+    "Bussetti & Mazza (acrylic/laser) — Alessandria"
   ],
   cnc: [
-    {name:"JOBSHOP.mx (CNC)", city:"Mexico City"},
-    {name:"Carpenteria locale", city:"Alessandria"}
+    "JOBSHOP.mx (CNC) — Mexico City",
+    "Carpenteria locale — Alessandria"
   ],
   wood: [
-    {name:"CNC / falegnamerie locali", city:"Alessandria"},
-    {name:"Router CNC providers", city:"Mexico City"}
+    "Router CNC providers — Mexico City",
+    "Falegnamerie locali — Alessandria"
   ],
   textile: [
-    {name:"Maquilas de ropa (CDMX)", city:"Mexico City"},
-    {name:"Sartorie locali", city:"Alessandria"}
+    "Maquilas de ropa — Mexico City",
+    "Sartorie locali — Alessandria"
   ],
   apparel: [
-    {name:"Workshops apparel (CDMX)", city:"Mexico City"},
-    {name:"Confezioni locali", city:"Alessandria"}
+    "Workshops apparel (CDMX) — Mexico City",
+    "Confezioni locali — Alessandria"
   ],
   lighting: [
-    {name:"Laser + acrylic vendors", city:"Mexico City"},
-    {name:"FabLab / LED suppliers", city:"Alessandria"}
+    "FabLab / LED suppliers — Alessandria",
+    "Laser + acrylic vendors — Mexico City"
   ],
   metal: [
-    {name:"Laserist / metal services", city:"Piemonte"},
-    {name:"CNC aluminum shops", city:"Mexico City"}
+    "Laserist / metal services — Piemonte",
+    "CNC aluminum shops — Mexico City"
   ],
   packaging: [
-    {name:"NOVO Empaques", city:"Mexico City"}
+    "NOVO Empaques — Mexico City"
   ]
 };
+const uniq = arr => [...new Set(arr)];
+const suppliersFor = (tags=[]) => uniq(tags.flatMap(t => SUPPLIERS[t] || [])).join("\n");
 
-// ---------- GALLERY (same as before; edit freely) ----------
+/* ---------------------------
+   HOME PAGE (index.html)
+   --------------------------- */
 const GALLERY = [
-  { id:"A-DRONE", title:"Project A — Hawk FPV Drone", img:"", tags:["drones","electronics"], blurb:"5\" FPV kit + custom shell + LEDs" },
-  { id:"B-LAMP", title:"Project B — Tree Motion Lamp", img:"", tags:["lighting","wood","electronics"], blurb:"USB-C, PIR auto-on, warm LED" },
+  { id:"A-DRONE",  title:"Project A — Hawk FPV Drone",    img:"", tags:["drones","electronics"],   blurb:"5\" FPV kit + custom shell + LEDs" },
+  { id:"B-LAMP",   title:"Project B — Tree Motion Lamp",  img:"", tags:["lighting","wood","electronics"], blurb:"USB-C, PIR auto-on, warm LED" },
   { id:"C-JACKET", title:"Project C — LED Festival Jacket", img:"", tags:["textile","electronics","lighting"], blurb:"ESP32, detachable LED panels" }
 ];
 
-// ---------- UTIL ----------
-const LS_KEY = "buildfast_projects";
-function loadProjects(){ try{ return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }catch(e){ return []; } }
-function saveLocal(p){ const arr = loadProjects(); arr.push(p); localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
-function uid(){ return "P-"+Math.random().toString(36).slice(2,10).toUpperCase(); }
-function uniq(arr){ return [...new Set(arr)]; }
+(function initHome(){
+  const grid = $("#gallery-grid");
+  if (!grid) return; // we’re not on the home page
 
-function suppliersFor(tags){
-  const out = [];
-  (tags||[]).forEach(t => (SUPPLIERS[t]||[]).forEach(s => out.push(`${s.name} — ${s.city}`)));
-  return uniq(out);
-}
-
-// ---------- INDEX ----------
-(function initIndex(){
-  const grid = document.getElementById("gallery-grid");
-  if(!grid) return;
-  const renderCard = (item)=>{
-    const el = document.createElement("article");
-    el.className = "card";
-    el.innerHTML = `
-      <div class="thumb" aria-label="thumbnail">${item.img ? `<img src="${item.img}" alt="">` : "Upload your own image"}</div>
+  // Render cards (square, cover-fit handled by CSS)
+  GALLERY.forEach(item => {
+    const card = document.createElement("article");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="thumb">${item.img ? `<img src="${item.img}" alt="${item.title}">` : "Upload your own image"}</div>
       <h3>${item.title}</h3>
       <p>${item.blurb}</p>
-      <div class="muted" style="font-size:12px">${item.tags.map(t=>"#"+t).join(" ")}</div>
+      <div class="muted" style="font-size:12px">${item.tags.map(t => "#"+t).join(" ")}</div>
     `;
-    grid.appendChild(el);
-  };
-  GALLERY.forEach(renderCard);
-
-  const fab = document.getElementById("fab");
-  fab?.addEventListener("click", ()=>{
-    const q = document.getElementById("q")?.value || "";
-    const url = new URL("create.html", location.href);
-    if(q) url.searchParams.set("q", q);
-    location.href = url.toString();
+    grid.appendChild(card);
   });
 
-  const topSearch = document.getElementById("top-search");
-  topSearch?.addEventListener("submit", (e)=>{
+  // Search → create.html?q=…
+  const form = $("#top-search");
+  form?.addEventListener("submit", (e)=>{
     e.preventDefault();
-    const q = document.getElementById("q").value.trim();
+    const q = ($("#q")?.value || "").trim();
     const url = new URL("create.html", location.href);
-    if(q) url.searchParams.set("q", q);
+    if (q) url.searchParams.set("q", q);
     location.href = url.toString();
   });
+
+  // Floating + → create.html (carry query if present)
+  const fab = $("#fab");
+  if (fab) {
+    fab.style.cursor = "pointer";
+    fab.addEventListener("click", ()=>{
+      const q = ($("#q")?.value || "").trim();
+      const url = new URL("create.html", location.href);
+      if (q) url.searchParams.set("q", q);
+      location.href = url.toString();
+    }, { passive:true });
+  }
 })();
 
-// ---------- WIZARD ----------
+/* ---------------------------
+   WIZARD (create.html)
+   - 3 paths: custom/scratch/business
+   - Validations
+   - Save → Supabase row (if supa)
+   - Email → EmailJS (if configured)
+   - JSON download (always)
+   --------------------------- */
 (function initWizard(){
-  const form = document.getElementById("wizard-form");
-  if(!form) return;
+  const form = $("#wizard-form");
+  if (!form) return; // not on create.html
 
-  const steps = [...document.querySelectorAll(".step")];
+  // Stepper
+  const steps = $$(".step");
   let current = 0;
-  function show(i){ steps.forEach((s,idx)=> s.hidden = idx!==i ); current = i; }
+  const show = i => { steps.forEach((s,k)=> s.hidden = (k!==i)); current = i; };
+  show(0);
 
-  // From URL prefill
+  // Prefill from ?q=
   const params = new URLSearchParams(location.search);
-  const q = params.get("q") || "";
-  const desc = document.getElementById("desc");
-  if(q && desc) desc.value = q;
+  const seed = params.get("q") || "";
+  if (seed) $("#desc").value = seed;
 
-  // Sketch preview
-  const sketches = document.getElementById("sketches");
-  const previews = document.getElementById("sketch-previews");
+  // Sketch previews
+  const sketches = $("#sketches"), previews = $("#sketch-previews");
   sketches?.addEventListener("change", ()=>{
     previews.innerHTML = "";
     [...sketches.files].forEach(file=>{
-      const url = URL.createObjectURL(file);
+      const u = URL.createObjectURL(file);
       const box = document.createElement("div");
       box.className = "preview";
-      box.innerHTML = `<img src="${url}">`;
+      box.innerHTML = `<img src="${u}" alt="">`;
       previews.appendChild(box);
     });
   });
 
-  // Next/back
+  // Next / Back buttons
   form.addEventListener("click", (e)=>{
-    if(e.target.classList.contains("next")){
-      if(current===0) show(1);            // Step1 -> Step2
-      else if(current===2 || current===3 || current===4) show(5); // after any Step3 -> Review
+    if (e.target.classList.contains("next")) {
+      if (current===0) {
+        // Minimal validation on step 1
+        const desc = $("#desc").value.trim();
+        const email = $("#cust-email").value.trim();
+        const tags  = $$("input[name='tags']:checked").map(i=>i.value);
+        if (!desc)  return alert("Please enter a short description.");
+        if (!email) return alert("Please enter your email.");
+        if (!tags.length) return alert("Pick at least one category.");
+        show(1);
+      } else if (current===2 || current===3 || current===4) {
+        renderReview();
+        show(5);
+      }
     }
-    if(e.target.classList.contains("prev")){
-      if(current>0) show(current-1);
+    if (e.target.classList.contains("prev")) {
+      if (current>0) show(current-1);
     }
   });
 
-  // Choose path
-  const choices = document.querySelectorAll(".option .choose");
-  let path = ""; // "custom" | "scratch" | "business"
-  choices.forEach(btn=> btn.addEventListener("click", (e)=>{
-    const wrap = e.target.closest(".option");
-    path = wrap?.dataset.choice || "";
-    if(path==="custom"){ 
-      show(2); // 3a
-      const kw = document.getElementById("kw");
-      const seed = (document.getElementById("desc").value || "").trim();
-      kw.value = seed;
-      updateMarketLinks();
-    } else if(path==="scratch"){
-      show(3); // 3b
-    } else {
-      show(4); // 3c
-    }
-  }));
+  // Path selection
+  let path = ""; // custom | scratch | business
+  $$(".option .choose").forEach(btn=>{
+    btn.addEventListener("click", (e)=>{
+      path = e.target.closest(".option")?.dataset.choice || "";
+      if (path==="custom") {
+        show(2); // step 3a
+        const kw = $("#kw");
+        kw.value = ($("#desc").value || "").trim();
+        updateMarketLinks();
+      } else if (path==="scratch") {
+        show(3); // step 3b
+      } else {
+        show(4); // step 3c (business)
+      }
+    });
+  });
 
-  // Market links from keywords
-  const kw = document.getElementById("kw");
+  // Market links for “custom”
+  const kw = $("#kw");
   function updateMarketLinks(){
-    const val = encodeURIComponent((kw?.value || "").trim());
-    const setHref = (id, url)=>{ const a = document.getElementById(id); if(a) a.href = url; };
-    setHref("link-amz", `https://www.amazon.com/s?k=${val}`);
-    setHref("link-ebay", `https://www.ebay.com/sch/i.html?_nkw=${val}`);
-    setHref("link-ali", `https://www.aliexpress.com/wholesale?SearchText=${val}`);
-    setHref("link-gshop", `https://www.google.com/search?tbm=shop&q=${val}`);
+    const v = encodeURIComponent((kw?.value || "").trim());
+    const set = (id,url)=>{ const a = $("#"+id); if (a) a.href = url; };
+    set("link-amz",  `https://www.amazon.com/s?k=${v}`);
+    set("link-ebay", `https://www.ebay.com/sch/i.html?_nkw=${v}`);
+    set("link-ali",  `https://www.aliexpress.com/wholesale?SearchText=${v}`);
+    set("link-gshop",`https://www.google.com/search?tbm=shop&q=${v}`);
   }
   kw?.addEventListener("input", updateMarketLinks);
 
-  // Add base product
-  const baseList = document.getElementById("base-list");
-  document.getElementById("add-base")?.addEventListener("click", ()=>{
-    const name = document.getElementById("base-name").value.trim();
-    const url = document.getElementById("base-url").value.trim();
-    if(!name || !url) return alert("Add both a name and a link.");
+  // Add base product lines
+  $("#add-base")?.addEventListener("click", ()=>{
+    const name = $("#base-name").value.trim();
+    const url  = $("#base-url").value.trim();
+    if (!name || !url) return alert("Please add both a name and a link.");
     const li = document.createElement("li");
     li.innerHTML = `<span>${name}</span> <a href="${url}" target="_blank" rel="noopener">${url}</a>`;
-    baseList.appendChild(li);
-    document.getElementById("base-name").value = "";
-    document.getElementById("base-url").value = "";
+    $("#base-list").appendChild(li);
+    $("#base-name").value = "";
+    $("#base-url").value  = "";
   });
 
-  // Submit/save
+  // Review builder
+  function renderReview(){
+    const tags = $$("input[name='tags']:checked").map(i=>i.value);
+    const supplierTxt = suppliersFor(tags) || "(no suppliers mapped)";
+    const baseItems = $$("#base-list li").map(li => {
+      const a = $("a", li);
+      return `${$("span", li).textContent}: ${a ? a.href : ""}`;
+    }).join(" | ") || "(none)";
+
+    const summary = {
+      Customer: `${$("#cust-name")?.value || ""} <${$("#cust-email")?.value || ""}>`,
+      Description: $("#desc").value,
+      Path: path || "(not chosen)",
+      Tags: tags.join(", "),
+      Suppliers: supplierTxt.split("\n").join(" | "),
+      Keywords: $("#kw")?.value || "",
+      BaseItems: baseItems,
+      Materials: $("#materials")?.value || "",
+      Components: ($("#components")?.value || "").slice(0,160),
+      Constraints: $("#constraints")?.value || "",
+      Business: {
+        Quantity: $("#batch-qty")?.value || "",
+        Certifications: $("#certs")?.value || "",
+        TargetUnitPrice: $("#target-price")?.value || ""
+      },
+      ShopRightsDiscount: !!$("#shop-discount")?.checked
+    };
+    $("#review").innerHTML = `<pre>${JSON.stringify(summary, null, 2)}</pre>`;
+  }
+
+  // Submit
   form.addEventListener("submit", async (e)=>{
     e.preventDefault();
 
-    const order = {
-      id: uid(),
-      createdAt: new Date().toISOString(),
-      customerName: document.getElementById("cust-name")?.value || "",
-      customerEmail: document.getElementById("cust-email")?.value || "",
-      desc: document.getElementById("desc").value,
-      details: document.getElementById("details").value,
-      tags: [...document.querySelectorAll("input[name='tags']:checked")].map(i=>i.value),
-      path,
-      keywords: document.getElementById("kw")?.value || "",
-      baseItems: [...document.querySelectorAll("#base-list li")].map(li=>{
-        const a = li.querySelector("a");
-        return { name: li.querySelector("span").textContent, url: a?.href || "" };
-      }),
-      materials: document.getElementById("materials")?.value || "",
-      components: document.getElementById("components")?.value || "",
-      constraints: document.getElementById("constraints")?.value || "",
-      shopDiscount: !!document.getElementById("shop-discount")?.checked,
-      business: {
-        batchQty: document.getElementById("batch-qty")?.value || "",
-        certs: document.getElementById("certs")?.value || "",
-        targetPrice: document.getElementById("target-price")?.value || ""
-      }
+    const tags = $$("input[name='tags']:checked").map(i=>i.value);
+    const supplierTxt = suppliersFor(tags) || "";
+    const baseItems = $$("#base-list li").map(li => {
+      const a = $("a", li);
+      return { name: $("span", li).textContent, url: a ? a.href : "" };
+    });
+
+    // Map to your current orders table columns:
+    // id (server default), created_at (server default),
+    // customer_name, customer_email, product_name, order_type,
+    // product_category, product_description, supplier_list, status
+    const row = {
+      customer_name:  $("#cust-name")?.value || "",
+      customer_email: $("#cust-email")?.value || "",
+      product_name:   $("#desc")?.value || "(untitled)",
+      order_type:     path || "custom",
+      product_category: tags.join(", "),
+      product_description: buildLongDescription(),
+      supplier_list:  supplierTxt,
+      status:         "Pending"
     };
 
-    // 1) Save to Supabase (orders)
-    try{
-      await supa.from("orders").insert([{
-        customer_name: order.customerName,
-        customer_email: order.customerEmail,
-        path: order.path,
-        desc: order.desc,
-        details: order.details,
-        tags: order.tags,
-        base_items: order.baseItems,
-        materials: order.materials,
-        components: order.components,
-        constraints: order.constraints,
-        shop_discount: order.shopDiscount,
-        payment_link: null  // set later if you list it in Shop
-      }]);
-    }catch(err){ console.error("Supabase insert error", err); }
+    // 1) Save to Supabase (if configured)
+    try {
+      if (supa) {
+        const { error } = await supa.from("orders").insert([ row ]);
+        if (error) console.error("Supabase insert error:", error);
+      }
+    } catch (err) {
+      console.error("Supabase error:", err);
+    }
 
-    // 2) Email you with suggested suppliers based on tags
-    try{
-      const suppliersTxt = suppliersFor(order.tags).join("\\n");
-      const baseTxt = order.baseItems.map(b=> `${b.name}: ${b.url}`).join("\\n") || "(none)";
+    // 2) Email notification (if configured)
+    try {
+      if (CFG.EMAILJS_SERVICE_ID && CFG.EMAILJS_TEMPLATE_ID && window.emailjs) {
+        await window.emailjs.send(
+          CFG.EMAILJS_SERVICE_ID,
+          CFG.EMAILJS_TEMPLATE_ID,
+          {
+            customer_name:  row.customer_name || "(no name)",
+            customer_email: row.customer_email || "(no email)",
+            product_name:   row.product_name,
+            order_type:     row.order_type,
+            product_category: row.product_category,
+            product_description: row.product_description,
+            supplier_list:  row.supplier_list || "(none)"
+          }
+        );
+      }
+    } catch (err) {
+      console.error("EmailJS error:", err);
+    }
 
-      await emailjs.send(
-        window.BF_CONFIG.EMAILJS_SERVICE_ID,
-        window.BF_CONFIG.EMAILJS_TEMPLATE_ID,
-        {
-          customer_name: order.customerName || "(no name)",
-          customer_email: order.customerEmail || "(no email)",
-          path: order.path,
-          desc: order.desc,
-          tags: (order.tags||[]).join(", "),
-          suppliers: suppliersTxt || "(no suppliers mapped)",
-          base_items: baseTxt,
-          discount: order.shopDiscount ? "Yes" : "No",
-          created_at: order.createdAt
-        }
-      );
-    }catch(err){ console.error("EmailJS error", err); }
-
-    // 3) Local JSON download (handy for manual tracking)
-    const blob = new Blob([JSON.stringify(order,null,2)], {type:"application/json"});
+    // 3) Download JSON locally (always works)
+    const order = {
+      ...row,
+      base_items: baseItems,
+      createdAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(order, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `${order.id}.json`; a.click();
+    a.href = url; a.download = `${uid()}.json`; a.click();
 
-    alert("Thanks! We received your order. We'll get back to you by email.");
+    alert("Thanks! We received your request. We’ll follow up by email.");
     location.href = "index.html";
   });
 
-  // Review render
-  const review = document.getElementById("review");
-  form.addEventListener("click", (e)=>{
-    if(e.target.classList.contains("next") && (current===2 || current===3 || current===4)){
-      const tags = [...document.querySelectorAll("input[name='tags']:checked")].map(i=>i.value);
-      const summary = {
-        Customer: (document.getElementById("cust-name")?.value || "") + " <" + (document.getElementById("cust-email")?.value || "") + ">",
-        Description: document.getElementById("desc").value,
-        Path: path || "(not chosen)",
-        Tags: tags.join(", "),
-        Suppliers: suppliersFor(tags).join(" | "),
-        Keywords: document.getElementById("kw")?.value || "",
-        BaseItems: [...document.querySelectorAll("#base-list li span")].map(s=>s.textContent).join(" | "),
-        Materials: document.getElementById("materials")?.value || "",
-        Components: (document.getElementById("components")?.value || "").slice(0,160) + "…",
-        Constraints: document.getElementById("constraints")?.value || "",
-        ShopDiscount: !!document.getElementById("shop-discount")?.checked
-      };
-      review.innerHTML = `<pre>${JSON.stringify(summary,null,2)}</pre>`;
-    }
-  });
-
-  // show Step 1 initially
-  show(0);
+  function buildLongDescription(){
+    const parts = [];
+    parts.push($("#details")?.value || "");
+    const kw = $("#kw")?.value || "";
+    if (kw) parts.push(`Keywords: ${kw}`);
+    const base = $$("#base-list li").map(li=>{
+      const a = $("a", li);
+      return `${$("span", li).textContent}: ${a ? a.href : ""}`;
+    });
+    if (base.length) parts.push(`Base items: ${base.join(" | ")}`);
+    const mats = $("#materials")?.value || "";
+    if (mats) parts.push(`Materials: ${mats}`);
+    const comps = $("#components")?.value || "";
+    if (comps) parts.push(`Components: ${comps}`);
+    const cons = $("#constraints")?.value || "";
+    if (cons) parts.push(`Constraints: ${cons}`);
+    const bq = $("#batch-qty")?.value || "";
+    const certs = $("#certs")?.value || "";
+    const tp = $("#target-price")?.value || "";
+    if (bq || certs || tp) parts.push(`Business: qty=${bq || "-"}, certs=${certs || "-"}, target=${tp || "-"}`);
+    if ($("#shop-discount")?.checked) parts.push("Shop rights discount: YES (10% + royalties)");
+    return parts.filter(Boolean).join("\n");
+  }
 })();
 
-// ---------- ADMIN (on admin.html) ----------
+/* ---------------------------
+   ADMIN (admin.html)
+   --------------------------- */
 window.BF_adminInit = async function(){
-  const loginForm = document.getElementById("login-form");
-  const dash = document.getElementById("dashboard");
-  const out = document.getElementById("orders");
+  const loginForm = $("#login-form");
+  const dash      = $("#dashboard");
+  const out       = $("#orders");
+  if (!loginForm || !supa) {
+    if (!supa && out) out.textContent = "Supabase config missing.";
+    return;
+  }
 
-  loginForm.addEventListener("submit", async (e)=>{
+  $("#login-btn")?.addEventListener("click", async (e)=>{
     e.preventDefault();
-    const email = document.getElementById("login-email").value;
-    const password = document.getElementById("login-pass").value;
-    const { data, error } = await supa.auth.signInWithPassword({ email, password });
-    if(error){ alert(error.message); return; }
+    const email = $("#login-email").value.trim();
+    const pass  = $("#login-pass").value.trim();
+    if (!email || !pass) return alert("Enter email and password.");
+    const { error } = await supa.auth.signInWithPassword({ email, password: pass });
+    if (error) return alert(error.message);
     loginForm.hidden = true;
     dash.hidden = false;
     loadOrders();
   });
 
   async function loadOrders(){
+    out.innerHTML = "Loading…";
     const { data, error } = await supa.from("orders").select("*").order("created_at",{ascending:false});
-    if(error){ out.textContent = error.message; return; }
-    if(!data.length){ out.innerHTML = "<p>No orders yet.</p>"; return; }
+    if (error) { out.textContent = error.message; return; }
+    if (!data.length) { out.innerHTML = "<p>No orders yet.</p>"; return; }
 
-    // basic stats
+    // Stats
     const total = data.length;
-    const byPath = data.reduce((m,o)=>{ m[o.path]=(m[o.path]||0)+1; return m; },{});
-    const byTag = {};
-    data.forEach(o => (o.tags||[]).forEach(t => byTag[t]=(byTag[t]||0)+1));
+    const byType = data.reduce((m,o)=>((m[o.order_type]=(m[o.order_type]||0)+1),m),{});
+    const byCat  = {};
+    data.forEach(o => (o.product_category||"").split(",").map(s=>s.trim()).filter(Boolean)
+      .forEach(c => byCat[c]=(byCat[c]||0)+1));
 
-    document.getElementById("stat-total").textContent = total;
-    document.getElementById("stat-path").textContent = JSON.stringify(byPath);
-    document.getElementById("stat-tag").textContent = JSON.stringify(byTag);
+    $("#stat-total").textContent = total;
+    $("#stat-path").textContent  = JSON.stringify(byType);
+    $("#stat-tag").textContent   = JSON.stringify(byCat);
 
-    // table
-    out.innerHTML = `<table style="width:100%;border-collapse:collapse">
-      <thead><tr>
-        <th align="left">When</th><th align="left">Customer</th><th align="left">Path</th>
-        <th align="left">Tags</th><th align="left">Desc</th><th align="left">Shop?</th>
-      </tr></thead>
-      <tbody>
-      ${data.map(o => `
-        <tr style="border-top:1px solid #eee">
-          <td>${new Date(o.created_at).toLocaleString()}</td>
-          <td>${o.customer_name||""} &lt;${o.customer_email||""}&gt;</td>
-          <td>${o.path}</td>
-          <td>${(o.tags||[]).join(", ")}</td>
-          <td>${(o.desc||"").slice(0,60)}</td>
-          <td>${o.shop_discount ? "Yes" : "No"}</td>
-        </tr>`).join("")}
-      </tbody></table>`;
+    // Table
+    out.innerHTML = `
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr>
+          <th align="left">When</th>
+          <th align="left">Customer</th>
+          <th align="left">Type</th>
+          <th align="left">Category</th>
+          <th align="left">Name</th>
+          <th align="left">Status</th>
+        </tr></thead>
+        <tbody>
+          ${data.map(o=>`
+            <tr style="border-top:1px solid #eee">
+              <td>${o.created_at ? new Date(o.created_at).toLocaleString() : "-"}</td>
+              <td>${o.customer_name || ""} &lt;${o.customer_email || ""}&gt;</td>
+              <td>${o.order_type || "-"}</td>
+              <td>${o.product_category || "-"}</td>
+              <td>${(o.product_name || "").slice(0,60)}</td>
+              <td>${o.status || "-"}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`;
   }
 };
 
-// ---------- SHOP (on shop.html) ----------
+/* ---------------------------
+   SHOP (shop.html)
+   --------------------------- */
 window.BF_shopInit = async function(){
-  const grid = document.getElementById("shop-grid");
-  const { data, error } = await supa.from("orders").select("*").eq("shop_discount", true).order("created_at",{ascending:false});
-  if(error){ grid.textContent = error.message; return; }
-  if(!data.length){ grid.innerHTML = "<p>No shared items yet.</p>"; return; }
+  const grid = $("#shop-grid");
+  if (!grid) return;
+  if (!supa) { grid.textContent = "Supabase config missing."; return; }
+
+  // If you later add a boolean column (e.g., shop_publish),
+  // you can filter here with .eq("shop_publish", true)
+  const { data, error } = await supa.from("orders").select("*").order("created_at",{ascending:false});
+  if (error) { grid.textContent = error.message; return; }
+  if (!data.length) { grid.innerHTML = "<p>No shared items yet.</p>"; return; }
+
   grid.innerHTML = data.map(o => `
     <article class="card">
-      <div class="thumb">${o.path==="scratch" ? "Custom build" : "Base-mod"}</div>
-      <h3>${o.desc||"Untitled"}</h3>
-      <p class="muted">${(o.tags||[]).map(t=>"#"+t).join(" ")}</p>
-      ${o.payment_link ? `<a class="pill" href="${o.payment_link}" target="_blank" rel="noopener">Buy</a>` : `<span class="muted small">Contact for price</span>`}
+      <div class="thumb">Preview</div>
+      <h3>${o.product_name || "Untitled"}</h3>
+      <p class="muted">${o.product_category || ""}</p>
+      <span class="muted small">Contact for price</span>
     </article>
   `).join("");
 };
